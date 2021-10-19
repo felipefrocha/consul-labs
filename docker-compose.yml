@@ -1,0 +1,116 @@
+version: "3.9"
+
+x-env: &consul-server
+  restart: always
+  networks:
+    consulnet-server:
+      aliases:
+        - consul_server
+    consulnet-client:
+      aliases:
+        - servers
+  ports: 
+    - "8500-8502/tcp"
+    - "8300-8302/tcp"
+    - "8300-8302/udp"
+    - "8600/udp"
+    - "8600/tcp"
+    - "21000-21255"
+  command: consul agent -data-dir /var/lib/consul -config-dir /etc/consul.d
+
+x-env1: &consul-client
+  restart: always
+  networks:
+    consulnet-client:
+      aliases:
+        - consul_clients
+  ports: 
+    - "8500-8502/tcp"
+    - "8300-8302/tcp"
+    - "8300-8302/udp"
+    - "8600/udp"
+    - "8600/tcp"
+    - "21000-21255"
+  command: consul agent -data-dir /var/lib/consul -config-dir /etc/consul.d
+
+services:
+
+  nginx:
+    image: consul_nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    networks:
+      - consulnet-server
+    ports:
+      - 8080:8080
+  
+  server01:
+    image: consul
+    container_name: consul-server1
+    <<: *consul-server
+    volumes:
+    - ./consul/servers/certs:/etc/pki:ro
+    - ./consul/servers/01/data:/var/lib/consul
+    - ./consul/servers/01/config:/etc/consul.d:ro
+
+
+  server02:
+    image: consul
+    container_name: consul-server2
+    <<: *consul-server
+    volumes:
+    - ./consul/servers/certs:/etc/pki:ro
+    - ./consul/servers/02/data:/var/lib/consul
+    - ./consul/servers/02/config:/etc/consul.d:ro
+
+
+  server03:
+    image: consul
+    container_name: consul-server3
+    <<: *consul-server
+    volumes:
+    - ./consul/servers/certs:/etc/pki:ro
+    - ./consul/servers/03/data:/var/lib/consul
+    - ./consul/servers/03/config:/etc/consul.d:ro
+
+  client01:
+    image: consul
+    container_name: consul-client1
+    <<: *consul-client
+    volumes:
+    - ./consul/clients/certs:/etc/pki:ro
+    - ./consul/clients/01/data:/var/lib/consul
+    - ./consul/clients/01/config:/etc/consul.d:ro
+
+  client02:
+    image: consul
+    container_name: consul-client2
+    <<: *consul-client
+    volumes:
+    - ./consul/clients/certs:/etc/pki:ro
+    - ./consul/clients/02/data:/var/lib/consul
+    - ./consul/clients/02/config:/etc/consul.d:ro
+
+  client03:
+    image: consul
+    container_name: consul-client3
+    <<: *consul-client
+    volumes:
+    - ./consul/clients/certs:/etc/pki:ro
+    - ./consul/clients/03/data:/var/lib/consul
+    - ./consul/clients/03/config:/etc/consul.d:ro
+
+networks:
+  consulnet-server:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.10.0.0/16
+  consulnet-client: 
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.11.0.0/16

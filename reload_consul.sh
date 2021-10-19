@@ -1,0 +1,1 @@
+for i in 1 2 3; do docker-compose -f docker-compose.consul.yml exec server0$i consul reload; done;
